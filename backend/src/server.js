@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./config/db');
 const { calcularClassificacao } = require('./services/risk');
+const { enviarSMS } = require('./services/smsService');
 
 // Configura o parsing de JSON e permite chamadas do frontend.
 const app = express();
@@ -117,14 +118,18 @@ app.post('/api/utilizadores', async (req, res) => {
     res.status(500).json({ erro: 'Não foi possível registar o utilizador.' });
   } finally { client.release(); }
 });
-// Cria um alerta e associa os distritos na mesma transação.
+// Cria e associa o alerta numa transação antes de iniciar notificações externas.
 app.post('/api/alertas', async (req, res) => {
   const { tipo_desastre, nivel, mensagem, distritos_ids, operador_id, score_ia, justificacao_ajuste = null } = req.body;
   if (!tipo_desastre || !nivel || !mensagem || !Array.isArray(distritos_ids) || !distritos_ids.length || !operador_id) {
     return res.status(400).json({ erro: 'tipo_desastre, nivel, mensagem, distritos_ids e operador_id são obrigatórios.' });
   }
-  const client = await pool.connect();
+  let client;
+  let alerta;
+
+  // Guarda primeiro o alerta. Uma falha posterior do fornecedor SMS não apaga o alerta validado.
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
     const inserted = await client.query(`
       INSERT INTO alertas (tipo_desastre, nivel, mensagem, operador_id, score_ia, justificacao_ajuste)
@@ -132,13 +137,58 @@ app.post('/api/alertas', async (req, res) => {
     `, [tipo_desastre, nivel, mensagem, operador_id, score_ia ?? null, justificacao_ajuste]);
     await client.query(`INSERT INTO alertas_distritos (alerta_id, distrito_id) SELECT $1, unnest($2::int[])`, [inserted.rows[0].id, distritos_ids]);
     await client.query('COMMIT');
-    res.status(201).json({ alerta: inserted.rows[0] });
+    alerta = inserted.rows[0];
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('Erro ao criar alerta:', error);
-    res.status(500).json({ erro: 'Não foi possível criar o alerta.' });
+    return res.status(500).json({ erro: 'Não foi possível criar o alerta.' });
   } finally {
-    client.release();
+    if (client) client.release();
+  }
+
+  // Só alertas médios ou altos notificam a comunidade; os restantes ficam registados.
+  const nivelNormalizado = String(nivel).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const deveNotificar = ['medio', 'alto'].includes(nivelNormalizado);
+
+  // Consulta contactos ativos dos distritos associados ao alerta já confirmado na base.
+  try {
+    const destinatarios = deveNotificar
+      ? await pool.query(
+        'SELECT telefone FROM utilizadores_comunidade WHERE distrito_id = ANY($1::int[]) AND ativo = TRUE',
+        [distritos_ids],
+      )
+      : { rows: [] };
+
+    // Dispara os pedidos em paralelo e contém a falha de cada destinatário individualmente.
+    const resultados = await Promise.all(destinatarios.rows.map(async (utilizador) => {
+      try {
+        return await enviarSMS(utilizador.telefone, mensagem);
+      } catch (error) {
+        console.error(`Falha ao preparar SMS para ${utilizador.telefone}:`, error.message);
+        return { sucesso: false, simulado: false, erro: error.message };
+      }
+    }));
+    const enviadosReais = resultados.filter((resultado) => resultado.sucesso && !resultado.simulado).length;
+    const simulados = resultados.filter((resultado) => resultado.sucesso && resultado.simulado).length;
+    const falhados = resultados.filter((resultado) => !resultado.sucesso).length;
+
+    return res.status(201).json({
+      alerta,
+      sms: {
+        destinatarios: destinatarios.rows.length,
+        enviados_reais: enviadosReais,
+        simulados,
+        falhados,
+        ignorado_por_nivel: !deveNotificar,
+      },
+    });
+  } catch (error) {
+    // O alerta já foi guardado; informa o operador sem sugerir que a criação falhou.
+    console.error('Alerta criado, mas não foi possível preparar os SMS:', error.message);
+    return res.status(201).json({
+      alerta,
+      sms: { destinatarios: null, enviados_reais: 0, simulados: 0, falhados: null, erro: 'Não foi possível consultar os contactos.' },
+    });
   }
 });
 

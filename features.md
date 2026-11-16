@@ -122,3 +122,12 @@ Validar cada caso em `GET /api/risco/:distritoId`, conferir nível, score, `dado
 Para a explicação da fórmula, o mapa dos módulos e os pressupostos do classificador, consultar [docs/ARQUITETURA_E_CLASSIFICACAO.md](docs/ARQUITETURA_E_CLASSIFICACAO.md).
 
 - [ ] Treinar e avaliar um modelo ML com séries históricas rotuladas, validação temporal e comparação com o motor de regras atual.
+
+## Backend: Integração de Serviço de SMS (Mock e Real)
+
+- `backend/src/services/smsService.js` isola o envio SMS da rota, normaliza telefones moçambicanos para `+258` e prepara a substituição futura do fornecedor.
+- Sem `SMS_API_KEY`, os envios são simulados e impressos no terminal como `[SMS SIMULADO]`; nenhuma chamada externa é feita.
+- Com `SMS_API_KEY`, o serviço envia para a API REST do eSMS Africa usando `SMS_SENDER_ID` ou `INGD` como remetente. Respostas identificadas pelo fornecedor como sandbox são contadas como simuladas; a chave deve ficar apenas no `.env` do backend.
+- `POST /api/alertas` guarda o alerta primeiro; para níveis médio e alto consulta os contactos com `ativo = TRUE` dos distritos afetados e dispara os SMS em paralelo. Falhas individuais não desfazem o alerta.
+- A resposta regista os totais de destinatários, pedidos reais aceites pelo fornecedor, simulações e falhas. Aceitação pelo fornecedor não confirma entrega no telemóvel. O envio ainda é síncrono nesta versão; uma fila e callbacks de entrega são passos recomendados antes de uso operacional.
+- `backend/.env.example` apresenta `SMS_API_KEY` e `SMS_SENDER_ID` sem credenciais. `backend/src/services/smsService.test.js` verifica formatação, simulação e contrato HTTP sem chamadas de rede.

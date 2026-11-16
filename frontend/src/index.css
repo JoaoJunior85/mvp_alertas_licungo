@@ -172,6 +172,115 @@ button:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 12px 24px #0
   .register-intro>div>span{gap:10px;min-height:26px}
   .register-intro>div>span svg{width:21px;height:21px;flex-basis:21px}
 }
+
+/* Acabamento do painel de operações: fundos com profundidade nos dois temas. */
+.operator:not(.operator-light) {
+  background:
+    radial-gradient(ellipse at 78% 8%, rgba(37, 99, 235, .16), transparent 34%),
+    radial-gradient(ellipse at 18% 72%, rgba(13, 148, 136, .10), transparent 36%),
+    #0b1220;
+}
+.operator-light {
+  background:
+    radial-gradient(ellipse at 82% 0%, rgba(59, 130, 246, .10), transparent 34%),
+    radial-gradient(ellipse at 12% 85%, rgba(20, 184, 166, .08), transparent 32%),
+    #eef3f9;
+}
+.operator .op-main { background: transparent; }
+.operator .sidebar {
+  background: color-mix(in srgb, var(--op-bg) 92%, #2563eb 8%);
+  box-shadow: 8px 0 30px rgba(2, 6, 23, .10);
+}
+.operator-light .sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fd 100%);
+  box-shadow: 8px 0 26px rgba(15, 23, 42, .05);
+}
+.operator .brand { gap: 12px; color: var(--op-text); }
+.operator .brand>img {
+  width: 68px;
+  height: 68px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--op-border) 72%, transparent);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #fff, #eaf3ff);
+  box-shadow: 0 8px 22px rgba(2, 6, 23, .18);
+}
+.operator .brand span.brand-word { font-size: 15px; letter-spacing: .09em; }
+.operator .brand-word small { color: var(--op-muted); font-size: 9px; letter-spacing: .13em; }
+.operator .op-status { display: flex; align-items: center; gap: 12px; color: var(--op-muted); }
+.operator .op-top { backdrop-filter: blur(14px); }
+.operator .card,
+.operator .stats article {
+  border-color: color-mix(in srgb, var(--op-border) 82%, #60a5fa 18%);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, .10);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.operator .card:hover,
+.operator .stats article:hover {
+  border-color: color-mix(in srgb, var(--op-border) 60%, #60a5fa 40%);
+  box-shadow: 0 16px 36px rgba(2, 6, 23, .15);
+}
+.operator:not(.operator-light) .card,
+.operator:not(.operator-light) .stats article {
+  background: linear-gradient(145deg, rgba(30, 41, 59, .98), rgba(20, 31, 49, .98));
+}
+.operator-light .card,
+.operator-light .stats article {
+  background: linear-gradient(145deg, #fff 0%, #f9fbff 100%);
+  box-shadow: 0 12px 28px rgba(30, 64, 110, .08);
+}
+.operator .stats article { border-top: 3px solid #3b82f6; }
+.operator .stats article:nth-child(2) { border-top-color: #f59e0b; }
+.operator .stats article:nth-child(3) { border-top-color: #10b981; }
+.operator .heading h1 { font-size: clamp(27px, 2.1vw, 34px); }
+.operator .heading p,
+.operator .stats article>small,
+.operator .stats article>span,
+.operator .field-label,
+.operator .manual>label { font-size: 11px; }
+.operator-light .heading p,
+.operator-light .stats article>small,
+.operator-light .stats article>span,
+.operator-light .reports article p,
+.operator-light .reports article small,
+.operator-light .reports time { color: #475569; }
+.operator-light .brand-word small { color: #334155; }
+.operator .theme-toggle { box-shadow: 0 4px 12px rgba(2, 6, 23, .12); }
+.operator .theme-toggle:focus-visible,
+.operator button:focus-visible,
+.operator select:focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+.operator:not(.operator-light) .op-main,
+.operator.operator-light .op-main { background: transparent; }
+.operator.operator-light {
+  background:
+    radial-gradient(ellipse at 82% 0%, rgba(59, 130, 246, .10), transparent 34%),
+    radial-gradient(ellipse at 12% 85%, rgba(20, 184, 166, .08), transparent 32%),
+    #eef3f9;
+}
+.operator:not(.operator-light) .sidebar {
+  background: linear-gradient(180deg, #101b2e 0%, #0b1220 100%);
+}
+.operator.operator-light .sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fd 100%);
+}
+.operator .sidebar>small,
+.operator .op-status,
+.operator .source { font-size: 10px; }
+.operator .card header small,
+.operator .heading>div>small { font-size: 10px; }
+.operator .ai-tag { padding: 7px 9px; font-size: 9px; }
+.operator:not(.operator-light) .ai-tag {
+  border-color: #365a78;
+  color: #bfdbfe;
+  background: #172b40;
+}
+.operator-light .brand { color: #0f172a; }
+.operator-light .brand-word small { color: #334155; }
+@media (max-width: 760px) {
+  .operator .brand>img { width: 60px; height: 60px; }
+  .operator .brand { gap: 9px; }
+  .operator .op-status { gap: 7px; }
+}
 @media(max-width:760px){.register-intro>div:not(.landscape){flex-flow:column nowrap;align-items:flex-start}}
 
 /* Logo da página inicial com fundo claro para revelar os detalhes azul-marinho. */
