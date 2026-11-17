@@ -3,8 +3,13 @@
 
 // Cria o pool PostgreSQL partilhado pelos handlers da API.
 const { Pool } = require('pg');
+const path = require('node:path');
 
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL não definido. Configure o ficheiro backend/.env.');
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

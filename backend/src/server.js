@@ -61,7 +61,7 @@ app.get('/api/risco/:distritoId', async (req, res) => {
         ) lr ON true
         WHERE e.distrito_id = $1 ORDER BY lr.lido_em DESC NULLS LAST LIMIT 1
       `, [distritoId]),
-      pool.query(`SELECT chuva_prevista_24h_mm, estado_ciclone, registo_em FROM estado_meteorologico WHERE distrito_id = $1 ORDER BY registo_em DESC LIMIT 1`, [distritoId]),
+      pool.query(`SELECT chuva_prevista_24h_mm, estado_ciclone, registado_em AS registo_em FROM estado_meteorologico WHERE distrito_id = $1 ORDER BY registado_em DESC LIMIT 1`, [distritoId]),
     ]);
     const station = rio.rows[0];
     const weather = meteo.rows[0];
@@ -80,6 +80,13 @@ app.get('/api/risco/:distritoId', async (req, res) => {
         emergencia: station.cota_emergencia, chuva: weather.chuva_prevista_24h_mm, ciclone: weather.estado_ciclone })
       : { score: null, nivel: 'indisponivel', detalhes: null };
     res.json({ risco_calculado: { ...risco, distrito_id: Number(distritoId), estacao: station?.estacao || null,
+      indicadores: {
+        nivel_rio_metros: station?.nivel_metros ?? null,
+        cota_atencao_metros: station?.cota_atencao ?? null,
+        cota_emergencia_metros: station?.cota_emergencia ?? null,
+        chuva_prevista_24h_mm: weather?.chuva_prevista_24h_mm ?? null,
+        estado_ciclone: weather?.estado_ciclone ?? null,
+      },
       atualizado_em: [station?.lido_em, weather?.registo_em].filter(Boolean).sort().at(-1) || null,
       dados_disponiveis: Boolean(leituraRioValida && meteoValida), fontes: {
         rio: { disponivel: Boolean(leituraRioValida), lido_em: station?.lido_em || null },

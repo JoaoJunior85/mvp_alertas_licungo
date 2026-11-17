@@ -21,6 +21,23 @@ import ContextoHistoricoCritico from "./ContextoHistoricoCritico";
 import { RiskMap } from "./RiskMap";
 import ThemeToggle from "./ThemeToggle";
 
+const DADOS_DEMONSTRATIVOS_IA = {
+  annual_precipitation: 1200,
+  precipitation_of_wettest_month: 300,
+  precipitation_seasonality: 50,
+  drainage_density: 2.5,
+  drainage_texture: 10,
+  basin_relief: 500,
+  annual_mean_temperature: 20,
+  temperature_seasonality: 500,
+  curve_number_amcii: 70,
+  ruggedness_number: 0.5,
+  infiltration_number: 5,
+  climate_type: 2,
+  landcover_type: 1,
+  soil_type: 3,
+};
+
 // Painel desktop para analisar indicadores, validar a classificação e emitir alertas.
 export default function OperatorScreen() {
   const [districts, setDistricts] = useState([]),
@@ -32,7 +49,10 @@ export default function OperatorScreen() {
     [panel, setPanel] = useState({}),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [aiBusy, setAiBusy] = useState(false),
+    [aiPrediction, setAiPrediction] = useState(null),
+    [aiError, setAiError] = useState("");
   const refresh = useCallback(async () => {
     try {
       const [d, p] = await Promise.all([api.getDistritos(), api.getPainel()]);
@@ -73,6 +93,8 @@ export default function OperatorScreen() {
     if (!district) return;
     setSelected(district);
     setRisk(null);
+    setAiPrediction(null);
+    setAiError("");
     setBusy(true);
     setError("");
     setNotice("");
@@ -86,6 +108,28 @@ export default function OperatorScreen() {
       setError(e.message);
     } finally {
       setBusy(false);
+    }
+  };
+  const analyzeWithAi = async () => {
+    setAiBusy(true);
+    setAiError("");
+    setAiPrediction(null);
+    try {
+      const prediction = await api.getAiPrediction(DADOS_DEMONSTRATIVOS_IA);
+      const nivel = {
+        HIGH: "alto",
+        MEDIUM: "medio",
+        LOW: "baixo",
+      }[String(prediction.risk_level || "").toUpperCase()];
+      const score = Number(prediction.flood_risk_score);
+      if (!nivel || !Number.isFinite(score) || score < 0 || score > 1) {
+        throw new Error("A API XGBoost devolveu uma previsão inválida.");
+      }
+      setAiPrediction({ ...prediction, nivel });
+    } catch (e) {
+      setAiError(e.message);
+    } finally {
+      setAiBusy(false);
     }
   };
   // Guarda o alerta validado; um nível diferente do resultado IA requer justificação.
@@ -219,6 +263,32 @@ export default function OperatorScreen() {
                   <Activity /> REGRAS PONDERADAS
                 </span>
               </header>
+              <div className="ai-demo">
+                <small>TESTE XGBOOST · VALORES DE DEMONSTRAÇÃO</small>
+                <p>
+                  Esta previsão usa valores de exemplo, não medições do
+                  Supabase. É apenas uma sugestão e não emite alertas.
+                </p>
+                <button
+                  className="primary"
+                  disabled={aiBusy}
+                  onClick={analyzeWithAi}
+                >
+                  {aiBusy ? "A analisar risco…" : "Fazer análise de risco"}
+                </button>
+                {aiPrediction && (
+                  <div className="ai-demo-result">
+                    <b style={{ color: meta(aiPrediction.nivel).color }}>
+                      Sugestão XGBoost: risco {meta(aiPrediction.nivel).name}
+                    </b>
+                    <span>
+                      Probabilidade de inundação: {aiPrediction.risk_percentage}
+                    </span>
+                    <small>{aiPrediction.message}</small>
+                  </div>
+                )}
+                {aiError && <p className="message error">{aiError}</p>}
+              </div>
               <label className="field-label">
                 Distrito em análise
                 <select

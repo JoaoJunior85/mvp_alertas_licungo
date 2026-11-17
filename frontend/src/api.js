@@ -1,6 +1,7 @@
 ﻿// Centraliza chamadas HTTP para manter os componentes focados na interface.
 // Endereço base substituível por ambiente, sem alterar os componentes.
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const AI_API_URL = import.meta.env.VITE_RISK_AI_API_URL || 'http://127.0.0.1:8000';
 
 // Lê JSON da resposta e transforma mensagens HTTP em erros úteis à interface.
 async function request(path, options) {
@@ -12,6 +13,14 @@ async function request(path, options) {
 
 // Constrói pedidos JSON para operações de escrita.
 const post = (dados) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
+const requestAiPrediction = async (dados) => {
+  const response = await fetch(`${AI_API_URL}/predict`, post(dados));
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.detail || 'Não foi possível obter a previsão XGBoost.');
+  }
+  return payload;
+};
 
 // Expõe as operações utilizadas pelas telas de operador e comunidade.
 export const api = {
@@ -20,6 +29,7 @@ export const api = {
   getRisco: (distritoId) => request(`/risco/${encodeURIComponent(distritoId)}`),
   getPainel: () => request('/painel'),
   getAlertasAtivos: (distritoId) => request(`/alertas/ativos?distrito_id=${encodeURIComponent(distritoId)}`),
+  getAiPrediction: requestAiPrediction,
   registar: (dados) => request('/utilizadores', post(dados)),
   enviarAlerta: (dados) => request('/alertas', post(dados)),
   confirmar: (dados) => request('/confirmacoes', post(dados)),

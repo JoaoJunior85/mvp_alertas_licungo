@@ -51,6 +51,17 @@ O backend lê as medições, valida valores e timestamps e chama `calcularClassi
 
 Os ficheiros `package-lock.json` registam versões exatas das dependências; como são JSON, não aceitam comentários. Imagens e ícones em `frontend/img`, `frontend/public` e `frontend/src/assets` são recursos estáticos, não módulos executáveis.
 
+## Ligar o backend ao Supabase
+
+O Supabase usa PostgreSQL, por isso o backend liga-se diretamente com o driver `pg`; não é necessária uma chave Supabase no frontend. Para configurar:
+
+1. No Supabase, abra **Connect** e copie a URI de conexão PostgreSQL do projeto.
+2. Copie `backend/.env.example` para `backend/.env` e substitua `DATABASE_URL` pela URI copiada. Use a senha do banco, não a chave `anon` nem a `service_role`.
+3. Se a senha tiver caracteres especiais, use a URI fornecida pelo Supabase ou codifique esses caracteres para URL.
+4. Inicie o backend a partir da pasta `backend` com `npm run dev`. O ficheiro `.env` não deve ser enviado ao Git.
+
+O backend consulta as tabelas `distritos`, `comunidades`, `estacoes`, `leituras_rio`, `estado_meteorologico`, `alertas`, `alertas_distritos`, `operadores_cenoe`, `utilizadores_comunidade`, `confirmacoes` e `reportes`. Na tabela `estado_meteorologico`, a coluna `registado_em` é usada para ordenar e validar a data da previsão. Para testar o cálculo, é preciso haver uma leitura do rio com menos de 6 horas e um registo meteorológico com menos de 24 horas para o distrito.
+
 ## Entradas e validação
 
 `calcularClassificacao({ nivel, atencao, emergencia, chuva, ciclone })` recebe:
