@@ -5,24 +5,27 @@ import {
   ArrowLeft,
   ArrowRight,
   Bell,
+  BadgeCheck,
+  CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
   House,
+  LockKeyhole,
   MapPin,
   MessageSquareWarning,
   Phone,
   Radio,
+  Radar,
   Shield,
   Users,
-  Waves,
   X,
 } from "lucide-react";
 import { api } from "../api";
 import { meta } from "../constants/risk";
 import { dateLabel } from "../utils/dateLabel";
 import Brand from "./Brand";
-import CartaoMemoriaHistorica from "./CartaoMemoriaHistorica";
+import CarrosselMemoria from "./CarrosselMemoria";
 
 // Registo e alertas claros, pensados primeiro para telemóvel.
 export default function CommunityScreen() {
@@ -43,6 +46,14 @@ export default function CommunityScreen() {
     [notice, setNotice] = useState("");
   const district = districts.find((d) => String(d.id) === String(districtId)),
     community = communities.find((c) => String(c.id) === String(communityId));
+  const nivelRisco = alerts[0]?.nivel || risk?.nivel || "indisponivel";
+  const riscoIndisponivel = nivelRisco === "indisponivel";
+  const classeRisco = riscoIndisponivel
+    ? "unavailable"
+    : ({ baixo: "low", medio: "medium", alto: "high" }[nivelRisco] || "unavailable");
+  const currentDate = new Intl.DateTimeFormat("pt-MZ", {
+    day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date());
   // Carrega as opções do banco e atualiza a lista de comunidades ao trocar de distrito.
   useEffect(() => {
     api
@@ -128,20 +139,24 @@ export default function CommunityScreen() {
   };
   return (
     <main className="community">
-      <header>
+      <header className="community-header sticky top-0 z-50 bg-white/80 backdrop-blur-md">
         <Brand />
-        <small>
+        <div className="community-header-status">
+          <time><CalendarDays /> {currentDate}</time>
+          <span className="system-online"><i /> Sistema Online</span>
+        </div>
+        <small className="community-header-trust">
           <Shield /> Informação protegida
         </small>
       </header>
-      <div className="community-main">
+      <div className="community-main animate-in fade-in slide-in-from-bottom-4 duration-700 animate-fade-in-up">
         <Link to="/" className="back">
           <ArrowLeft /> Página inicial
         </Link>
         {!user ? (
           <>
-            <div className="register">
-              <section className="register-intro">
+            <div className="register grid grid-cols-1 md:grid-cols-2">
+              <section className="register-intro animate-fade-in-up">
                 <small>ALERTA COMUNITÁRIO</small>
                 <h1>
                   Informação a tempo.
@@ -163,14 +178,9 @@ export default function CommunityScreen() {
                     <Users /> Uma rede mais preparada
                   </span>
                 </div>
-                <div className="landscape">
-                  <i />
-                  <Waves />
-                  <House />
-                  <MapPin />
-                </div>
+                <CarrosselMemoria />
               </section>
-              <section className="form-card">
+              <section className="form-card shadow-2xl animate-fade-in-up">
                 <small>REGISTO GRATUITO</small>
                 <h2>Vamos manter contacto.</h2>
                 <p>Preencha os dados para receber avisos da proteção civil.</p>
@@ -178,8 +188,9 @@ export default function CommunityScreen() {
                   <label>
                     Número de telemóvel
                     <span className="input">
-                      <Phone />
+                      <Phone className="form-field-icon" />
                       <input
+                        className="min-h-[48px] border-gray-200 bg-gray-50 text-base transition focus:bg-white focus:ring-2 focus:ring-blue-500"
                         type="tel"
                         placeholder="Ex.: 84 123 4567"
                         value={phone}
@@ -194,8 +205,9 @@ export default function CommunityScreen() {
                   <label>
                     Distrito
                     <span className="select">
-                      <MapPin />
+                      <MapPin className="form-field-icon" />
                       <select
+                        className="min-h-[48px] border-gray-200 bg-gray-50 text-base transition focus:bg-white focus:ring-2 focus:ring-blue-500"
                         value={districtId}
                         onChange={(e) => setDistrictId(e.target.value)}
                         required
@@ -215,8 +227,9 @@ export default function CommunityScreen() {
                   <label>
                     Comunidade
                     <span className="select">
-                      <House />
+                      <House className="form-field-icon" />
                       <select
+                        className="min-h-[48px] border-gray-200 bg-gray-50 text-base transition focus:bg-white focus:ring-2 focus:ring-blue-500"
                         value={communityId}
                         onChange={(e) => setCommunityId(e.target.value)}
                         required
@@ -243,37 +256,39 @@ export default function CommunityScreen() {
                     </p>
                   )}
                   <button
-                    className="community-button"
+                    className="community-button w-full min-h-[48px] bg-gradient-to-r from-blue-600 to-blue-700 text-base transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg md:w-auto"
                     disabled={busy || !districts.length || !communities.length}
                   >
                     {busy ? "A guardar…" : "Registar para receber alertas"}{" "}
                     <ArrowRight />
                   </button>
                 </form>
-                <footer>
-                  <Shield /> Os seus dados são usados apenas para avisos de
-                  proteção civil.
+                <div className="trust-signals">
+                  <span><LockKeyhole /> Dados encriptados</span>
+                  <span><BadgeCheck /> Ligado ao INGD</span>
+                </div>
+                <footer className="form-privacy-note">
+                  <Shield /> Os seus dados são usados apenas para avisos de proteção civil.
                 </footer>
               </section>
             </div>
-            <CartaoMemoriaHistorica />
           </>
         ) : (
           <section className="dashboard">
             <div className="welcome">
               <div>
                 <small>ALERTAS DA MINHA ZONA</small>
-                <h1>Olá, vizinho.</h1>
-                <p>
+                <h1 className="text-3xl md:text-4xl font-extrabold">Olá, vizinho.</h1>
+                <span className="location-filter" title="Comunidade selecionada">
                   <MapPin /> {community?.nome} · {district?.nome}
-                </p>
+                </span>
               </div>
               <span>
                 <CheckCircle2 /> Registo ativo
               </span>
             </div>
             <article
-              className="current"
+              className={`current shadow-sm hover:shadow-md transition-shadow duration-300 ${riscoIndisponivel ? "current-unavailable bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300" : `current-available border-l-8 risk-${classeRisco}`}`}
               style={{ "--risk": meta(alerts[0]?.nivel || risk?.nivel).color }}
             >
               <div>
@@ -285,6 +300,11 @@ export default function CommunityScreen() {
                 )}
               </div>
               <small>NÍVEL DE RISCO NA SUA ZONA</small>
+              {riscoIndisponivel && (
+                <span className="risk-empty-icon" aria-label="A aguardar leituras">
+                  <Radar className="animate-spin-slow" />
+                </span>
+              )}
               <h2>Risco {meta(alerts[0]?.nivel || risk?.nivel).name}</h2>
               <p>{alerts[0]?.mensagem || meta(risk?.nivel).advice}</p>
               <footer>
@@ -297,7 +317,7 @@ export default function CommunityScreen() {
                 </span>
               </footer>
             </article>
-            <CartaoMemoriaHistorica />
+            <CarrosselMemoria />
             {error && <p className="message error">{error}</p>}
             {notice && (
               <p className="message success">

@@ -131,3 +131,74 @@ Para a explicação da fórmula, o mapa dos módulos e os pressupostos do classi
 - `POST /api/alertas` guarda o alerta primeiro; para níveis médio e alto consulta os contactos com `ativo = TRUE` dos distritos afetados e dispara os SMS em paralelo. Falhas individuais não desfazem o alerta.
 - A resposta regista os totais de destinatários, pedidos reais aceites pelo fornecedor, simulações e falhas. Aceitação pelo fornecedor não confirma entrega no telemóvel. O envio ainda é síncrono nesta versão; uma fila e callbacks de entrega são passos recomendados antes de uso operacional.
 - `backend/.env.example` apresenta `SMS_API_KEY` e `SMS_SENDER_ID` sem credenciais. `backend/src/services/smsService.test.js` verifica formatação, simulação e contrato HTTP sem chamadas de rede.
+
+## Backend: Integração do modelo XGBoost
+
+- `backend/src/services/riskModel.js` valida as 14 entradas necessárias pelo endpoint Python e encaminha pedidos com timeout; erros e respostas fora do contrato são tratados como falha do serviço.
+- `POST /api/risco/modelo` encaminha a previsão sem expor a API Python diretamente ao browser. Configure `RISK_MODEL_API_URL` no backend; por padrão usa `http://127.0.0.1:8000`.
+- O painel usa esse proxy, mas a ação XGBoost continua identificada como demonstração: envia valores fixos de exemplo, não dados do Supabase. A previsão indica suscetibilidade à inundação e não substitui o risco atual calculado pelas regras.
+- A demonstração foi executada de ponta a ponta: os valores fixos do painel passaram pelo backend Node e pela API Python, que carregou `flood_model.pkl` e devolveu score `0.0779` (7,8%), nível `LOW` e 13 features processadas. Isso comprova que o artefacto faz inferência; não comprova a precisão científica ou a adequação do resultado a um distrito real.
+- Para reproduzir no Windows, abrir um terminal em `api-risco/api-py` e iniciar `.\.venv\Scripts\python.exe -m uvicorn api:app --host 127.0.0.1 --port 8000`; deixar essa janela aberta. Em terminais separados, executar `npm run dev` em `backend` e em `frontend`; abrir a tela do operador e clicar em **Fazer análise de risco** no cartão XGBoost. O mesmo payload pode ser enviado a `POST /api/risco/modelo`.
+- Ao carregar o artefacto, o ambiente reportou que o `LabelEncoder` foi guardado com scikit-learn 1.6.1 e está a ser aberto com 1.9.1, além de um aviso de serialização do XGBoost. A previsão respondeu, mas antes de uso prolongado é preciso recuperar as versões exatas do treino e fixá-las em `requirements.txt`.
+- Para aplicar o modelo a Mocuba, Namacurra ou Maganja da Costa faltam fontes verificadas para as características de clima, relevo, drenagem, solo e cobertura terrestre usadas no treino. Não preencher estes campos com valores de exemplo para emitir alertas.
+- A API Python requer as dependências em `api-risco/api-py/requirements.txt` e os artefactos do modelo. Se o ambiente virtual não existir, criar com `py -m venv .venv` e instalar com `.\.venv\Scripts\python.exe -m pip install -r requirements.txt`, sempre dentro de `api-risco/api-py`.
+
+### Cenário de apresentação — inferência XGBoost com dados demonstrativos
+
+Usar no cartão **Análise de risco** do operador. O painel já envia este conjunto fixo ao backend e o backend encaminha-o para `POST /predict` na API Python:
+
+| Entrada | Valor demonstrativo |
+|---|---:|
+| Precipitação anual | 1200 mm/ano |
+| Precipitação do mês mais chuvoso | 300 mm |
+| Sazonalidade da precipitação | 50 |
+| Densidade de drenagem | 2,5 km/km² |
+| Textura de drenagem | 10 |
+| Relevo da bacia | 500 m |
+| Temperatura média anual | 20 °C |
+| Sazonalidade da temperatura | 500 |
+| Curve Number AMC II | 70 |
+| Índice de rugosidade | 0,5 |
+| Índice de infiltração | 5 |
+| Códigos categóricos de clima / cobertura / solo | 2 / 1 / 3 |
+
+**Resultado observado:** score `0.0779`, percentagem apresentada `7.8%`, classificação `LOW` (baixo), com 13 features utilizadas. Na apresentação, explicar que isto demonstra a execução do modelo e a integração entre frontend, backend e API Python; não é uma leitura real de Mocuba, Namacurra ou Maganja da Costa, nem uma medição de precisão do modelo. O botão não emite alerta nem SMS.
+
+**Antes de abrir o painel:** iniciar a API Python pelo comando acima e manter essa janela aberta. Confirmar `http://127.0.0.1:8000/health` (deve indicar `running`, `XGBoost`, `13`) e então clicar **Fazer análise de risco**. O backend e o frontend precisam estar activos nas respectivas janelas.
+
+## Preparação para hospedagem
+
+- `docker-compose.yml` orquestra frontend Nginx, backend Node e API FastAPI/XGBoost; só o frontend publica a porta `8080`, enquanto Node e Python ficam na rede interna.
+- Foram adicionados Dockerfiles, verificações de saúde, proxy `/api` e fallback SPA. O frontend usa `/api` por padrão; no desenvolvimento, o Vite encaminha esse prefixo ao backend local.
+- `backend/.env.example` contém apenas placeholders. Crie `backend/.env`, configure `DATABASE_URL` e a origem pública em `CORS_ORIGIN`; mantenha `SMS_API_KEY` vazio para simulação.
+- O procedimento de configuração, build e publicação está em [docs/HOSTING.md](docs/HOSTING.md). A construção local das imagens requer Docker Engine e Docker Compose.
+
+## UI/UX: Upgrade da Sidebar para Estilo War Room (Relógio, Status do Sistema, Menu Rico)
+
+- O painel do operador ganhou sidebar com navegação, relógio local de Maputo atualizado por segundo, estado da API/base de dados/SMS, perfil demonstrativo e saída para a página inicial.
+- As secções sem rota funcional aparecem como preparadas e desativadas; a navegação existente e o mapa não foram alterados. A sidebar adapta cores e transparência aos temas claro e escuro.
+- O botão **Dados de demonstração** ativa contadores e reportes fictícios apenas no frontend: 42 pessoas, 3 alertas ativos, 18 confirmações e três reportes de exemplo. Uma faixa informa que estes valores não vêm nem são gravados na Supabase. Desativando o modo, o painel volta aos dados reais da API.
+- A área XGBoost permite expandir e inspecionar o payload de demonstração enviado ao modelo. A previsão continua a depender da API Python; se estiver desligada, o painel mostra instruções e não inventa uma classificação.
+
+## UI/UX: Refinamento Institucional (Glassmorphism, Hero Section com Imagem Histórica, Trust Signals)
+
+- A tela de entrada recebeu fundo azul profundo com gradientes radiais e padrão topográfico local em baixa opacidade, logótipo circular, identificação textual de INGD/INAM/ARA-Centro e título com gradiente.
+- Os cartões de acesso usam vidro fosco, badges de acesso e realce no hover; as setas deslocam-se suavemente e as secções entram com animação curta.
+- A tela comunitária apresenta data e estado no cabeçalho, fotografia histórica na coluna de introdução, formulário elevado com campos de foco visível e sinais de confiança com ícones Lucide.
+- O cartão histórico mantém-se também no painel após registo; não foram alteradas as rotas nem chamadas de API.
+
+## UI/UX: Implementação de Responsividade Mobile-First (Sidebar retrátil, Grids adaptativos, Touch targets otimizados)
+
+- A tela de entrada empilha os cartões em mobile e usa duas colunas a partir de `sm`; o título usa tamanho fluido para caber em ecrãs estreitos.
+- A tela da comunidade empilha introdução, fotografia histórica e formulário até `md`, passando a duas colunas em ecrãs maiores. Campos e botão mantêm alvos de toque com pelo menos 48 px e tipografia legível.
+- No operador, a sidebar torna-se uma gaveta com hambúrguer e fundo de fecho até `md`; em desktop continua fixa. Estatísticas e mapa/análise adaptam as colunas conforme a largura.
+- O mapa mantém pelo menos 300 px de altura em mobile; reportes podem quebrar em linhas sem criar scroll horizontal.
+- Rotas, regras de negócio, cores, fontes e chamadas de API foram mantidas.
+
+## UI/UX: Implementação de Carrossel Automático na Memória Histórica e Refinamento do Cartão de Risco da Comunidade
+
+- O cartão histórico passou a alternar imagens locais de cheias e ciclones a cada 6 segundos, com crossfade, texto fixo, pontos indicadores e controlos manuais.
+- O temporizador é limpo quando o componente sai da tela, evitando intervalos pendurados; setas e pontos permitem navegação acessível no telemóvel.
+- O cartão de risco indisponível tem gradiente suave, borda tracejada e radar animado. Para risco baixo, médio ou alto, usa borda lateral e fundo com tonalidade correspondente.
+- O cabeçalho comunitário permanece fixo durante o scroll; a localização aparece como filtro visual e o conteúdo da tela entra com uma animação discreta.
+- As leituras de risco e os pedidos existentes à API não foram alterados.

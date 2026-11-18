@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: licungo-risk-model
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deployment/risk-model/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: REQUIRE_MODEL_API_TOKEN
+        value: "true"
+      - key: MODEL_API_TOKEN
+        generateValue: true
+
+  - type: web
+    name: licungo-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: RISK_MODEL_API_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: MODEL_API_TOKEN
+        fromService:
+          type: web
+          name: licungo-risk-model
+          envVarKey: MODEL_API_TOKEN
+      - key: SMS_SENDER_ID
+        value: INGD

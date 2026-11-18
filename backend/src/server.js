@@ -4,10 +4,13 @@ const cors = require('cors');
 const pool = require('./config/db');
 const { calcularClassificacao } = require('./services/risk');
 const { enviarSMS } = require('./services/smsService');
+const { preverRiscoInundacao } = require('./services/riskModel');
 
 // Configura o parsing de JSON e permite chamadas do frontend.
 const app = express();
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')
+  .split(',').map((origin) => origin.trim()).filter(Boolean);
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Define os limites de risco e as coordenadas para os três distritos do estudo de caso.
@@ -20,6 +23,16 @@ const DISTRITOS_MAPA = {
 // Expõe o estado do serviço para uma verificação rápida.
 app.get('/', (_req, res) => {
   res.json({ mensagem: 'API do Sistema de Alerta Precoce (Licungo) está online!' });
+});
+
+// Verifica a ligação à base de dados para readiness checks do container de produção.
+app.get(['/health', '/api/health'], async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', database: 'ok', sms_mode: process.env.SMS_API_KEY ? 'real' : 'simulado' });
+  } catch {
+    res.status(503).json({ status: 'unavailable', database: 'unavailable' });
+  }
 });
 
 // Entrega os distritos e as comunidades existentes para os formulários e o mapa.
@@ -96,6 +109,19 @@ app.get('/api/risco/:distritoId', async (req, res) => {
   } catch (error) {
     console.error('Erro ao classificar risco:', error);
     res.status(500).json({ erro: 'Não foi possível classificar o risco.' });
+  }
+});
+
+// Encaminha uma previsão de suscetibilidade ao serviço Python sem a misturar com o risco atual.
+// O pedido precisa conter as 13 variáveis geográficas/climáticas do modelo.
+app.post('/api/risco/modelo', async (req, res) => {
+  try {
+    const prediction = await preverRiscoInundacao(req.body);
+    res.json({ previsao_modelo: prediction });
+  } catch (error) {
+    const status = error.statusCode || 503;
+    if (status >= 500) console.error('Serviço XGBoost indisponível:', error.message);
+    res.status(status).json({ erro: error.message || 'Não foi possível consultar o modelo.' });
   }
 });
 
@@ -304,6 +330,6 @@ app.get('/api/historico', async (_req, res) => {
 
 // Inicializa o servidor quando este módulo é iniciado diretamente.
 const PORT = process.env.PORT || 3000;
-if (require.main === module) app.listen(PORT, () => console.log(`Servidor a correr na porta ${PORT}`));
+if (require.main === module) app.listen(PORT, '0.0.0.0', () => console.log(`Servidor a correr na porta ${PORT}`));
 module.exports = app;
 

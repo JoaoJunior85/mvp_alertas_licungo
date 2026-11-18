@@ -14,7 +14,7 @@ export function RiskMap({ districts, risks, selected, onSelect }) {
     : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   return (
-    <div className={`map-box ${cartoKey ? 'map-carto' : 'map-osm'}`}>
+    <div className={`map-box h-[300px] w-full ${cartoKey ? 'map-carto' : 'map-osm'}`}>
       <MapContainer center={center} zoom={8} scrollWheelZoom zoomControl={false}>
         <ZoomControl position="bottomright" />
         <TileLayer attribution={attribution} url={tileUrl} />

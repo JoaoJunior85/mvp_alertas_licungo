@@ -8,7 +8,10 @@ import {
   Check,
   CheckCircle2,
   CloudRain,
+  Database,
+  FlaskConical,
   MapPin,
+  Menu,
   Users,
   Waves,
   Wind,
@@ -16,10 +19,11 @@ import {
 import { api } from "../api";
 import { RISK, meta } from "../constants/risk";
 import { dateLabel } from "../utils/dateLabel";
-import Brand from "./Brand";
 import ContextoHistoricoCritico from "./ContextoHistoricoCritico";
+import OperatorSidebar from "./OperatorSidebar";
 import { RiskMap } from "./RiskMap";
 import ThemeToggle from "./ThemeToggle";
+import { DADOS_PAINEL_DEMONSTRACAO } from "../demo/operatorDemoData";
 
 const DADOS_DEMONSTRATIVOS_IA = {
   annual_precipitation: 1200,
@@ -52,7 +56,11 @@ export default function OperatorScreen() {
     [busy, setBusy] = useState(false),
     [aiBusy, setAiBusy] = useState(false),
     [aiPrediction, setAiPrediction] = useState(null),
-    [aiError, setAiError] = useState("");
+    [aiError, setAiError] = useState(""),
+    [systemStatus, setSystemStatus] = useState({ api: false, database: false }),
+    [demoMode, setDemoMode] = useState(
+      () => window.localStorage.getItem("licungo-operator-demo") === "true",
+    );
   const refresh = useCallback(async () => {
     try {
       const [d, p] = await Promise.all([api.getDistritos(), api.getPainel()]);
@@ -78,9 +86,29 @@ export default function OperatorScreen() {
   const [theme, setTheme] = useState(
     () => window.localStorage.getItem("licungo-operator-theme") || "dark",
   );
+  // Controla apenas a abertura visual do menu lateral em ecrãs pequenos.
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   useEffect(() => {
     refresh();
   }, [refresh]);
+  // Actualiza o estado dos serviços sem misturar saúde da API com dados do painel.
+  useEffect(() => {
+    let active = true;
+    const checkServices = async () => {
+      try {
+        const health = await api.getHealth();
+        if (active) setSystemStatus({ api: true, database: health.database === "ok", smsSimulated: health.sms_mode !== "real" });
+      } catch {
+        if (active) setSystemStatus({ api: false, database: false, smsSimulated: true });
+      }
+    };
+    checkServices();
+    const timer = window.setInterval(checkServices, 15000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+  useEffect(() => {
+    window.localStorage.setItem("licungo-operator-demo", String(demoMode));
+  }, [demoMode]);
   // Guarda cada escolha para manter o mesmo tema quando o operador voltar.
   useEffect(() => {
     window.localStorage.setItem("licungo-operator-theme", theme);
@@ -172,29 +200,42 @@ export default function OperatorScreen() {
       setBusy(false);
     }
   };
+  const painelVisivel = demoMode ? DADOS_PAINEL_DEMONSTRACAO : panel;
+  const alertasVisiveis = Number(painelVisivel.alertas_ativos || 0);
   const stats = [
-    ["Pessoas registadas", panel.utilizadores_total, Users],
-    ["Alertas ativos", panel.alertas_ativos, Bell],
-    ["Confirmações recebidas", panel.confirmacoes_recebidas, CheckCircle2],
+    ["Pessoas registadas", painelVisivel.utilizadores_total, Users],
+    ["Alertas ativos", painelVisivel.alertas_ativos, Bell],
+    ["Confirmações recebidas", painelVisivel.confirmacoes_recebidas, CheckCircle2],
   ];
   return (
     <main className={`operator operator-${theme}`}>
-      <aside className="sidebar">
-        <Brand />
-        <small>CENTRO DE OPERAÇÕES</small>
-        <div className="nav-active">
-          <Activity /> Visão geral <i />
-        </div>
-        <div className="operator-user">
-          <b>C</b>
-          <span>
-            Operador CENOE<small>Centro de emergência</small>
-          </span>
-        </div>
-      </aside>
+      {isSidebarOpen && (
+        <button
+          className="sidebar-backdrop"
+          type="button"
+          aria-label="Fechar menu de navegação"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      <OperatorSidebar
+        activeAlerts={alertasVisiveis}
+        systemStatus={systemStatus}
+        smsSimulated={systemStatus.smsSimulated ?? true}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
       <section className="op-main">
         <header className="op-top">
           <span>
+            <button
+              className="mobile-menu-button"
+              type="button"
+              aria-label={isSidebarOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={isSidebarOpen}
+              onClick={() => setIsSidebarOpen((open) => !open)}
+            >
+              <Menu size={21} />
+            </button>
             <Link to="/">LICUNGO</Link>　›　<b>Monitorização</b>
           </span>
           <span className="op-status">
@@ -209,11 +250,16 @@ export default function OperatorScreen() {
               <h1>Painel de operações</h1>
               <p>Analise as condições e coordene uma resposta rápida.</p>
             </div>
-            <button className="quiet" onClick={refresh}>
-              <Activity /> Atualizar
-            </button>
+            <div className="heading-actions">
+              <button className={`demo-toggle${demoMode ? " selected" : ""}`} onClick={() => setDemoMode((enabled) => !enabled)}>
+                {demoMode ? <Database /> : <FlaskConical />}
+                {demoMode ? "Desativar demonstração" : "Dados de demonstração"}
+              </button>
+              <button className="quiet" onClick={refresh}><Activity /> Atualizar</button>
+            </div>
           </div>
-          <div className="stats">
+          {demoMode && <div className="demo-banner"><FlaskConical size={15} /> MODO DE DEMONSTRAÇÃO · Os indicadores e reportes abaixo são exemplos locais e não estão gravados na Supabase.</div>}
+          <div className="stats grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             {stats.map(([label, value, Icon]) => (
               <article key={label}>
                 <Icon />
@@ -223,8 +269,8 @@ export default function OperatorScreen() {
               </article>
             ))}
           </div>
-          <div className="workspace">
-            <section className="card map-panel">
+          <div className="workspace grid grid-cols-1 lg:grid-cols-3">
+            <section className="card map-panel lg:col-span-2">
               <header>
                 <div>
                   <small>MAPA DE RISCO</small>
@@ -266,8 +312,9 @@ export default function OperatorScreen() {
               <div className="ai-demo">
                 <small>TESTE XGBOOST · VALORES DE DEMONSTRAÇÃO</small>
                 <p>
-                  Esta previsão usa valores de exemplo, não medições do
-                  Supabase. É apenas uma sugestão e não emite alertas.
+                  Os valores enviados são exemplos, não dados do Supabase. O
+                  modelo estima suscetibilidade à inundação; não representa o
+                  risco hidrometeorológico atual nem emite alertas.
                 </p>
                 <button
                   className="primary"
@@ -279,15 +326,21 @@ export default function OperatorScreen() {
                 {aiPrediction && (
                   <div className="ai-demo-result">
                     <b style={{ color: meta(aiPrediction.nivel).color }}>
-                      Sugestão XGBoost: risco {meta(aiPrediction.nivel).name}
+                      XGBoost · suscetibilidade {meta(aiPrediction.nivel).name}
                     </b>
                     <span>
-                      Probabilidade de inundação: {aiPrediction.risk_percentage}
+                      Score estimado: {aiPrediction.risk_percentage}
                     </span>
                     <small>{aiPrediction.message}</small>
                   </div>
                 )}
-                {aiError && <p className="message error">{aiError}</p>}
+                <details className="demo-inputs">
+                  <summary>Ver dados enviados ao modelo · 14 campos</summary>
+                  <div className="demo-input-grid">
+                    {Object.entries(DADOS_DEMONSTRATIVOS_IA).map(([key, value]) => <span key={key}><code>{key}</code><b>{value}</b></span>)}
+                  </div>
+                </details>
+                {aiError && <div className="message error ai-unavailable"><AlertOctagon /><div><span>{aiError}</span><small>Para executar a classificação, inicia a API Python em <code>api-risco/api-py</code> e mantém o terminal aberto. A interface envia estes valores ao modelo real; não inventa uma previsão se o serviço estiver desligado.</small></div></div>}
               </div>
               <label className="field-label">
                 Distrito em análise
@@ -421,12 +474,12 @@ export default function OperatorScreen() {
                 <small>RETORNO DO TERRENO</small>
                 <h2>Reportes recentes</h2>
               </div>
-              <span>{panel.reportes_recentes?.length || 0} reportes</span>
+              <span>{painelVisivel.reportes_recentes?.length || 0} reportes{demoMode ? " · demonstração" : ""}</span>
             </header>
-            {!panel.reportes_recentes?.length ? (
+            {!painelVisivel.reportes_recentes?.length ? (
               <p className="muted">Ainda não há reportes registados.</p>
             ) : (
-              panel.reportes_recentes.map((r) => (
+              painelVisivel.reportes_recentes.map((r) => (
                 <article key={r.id}>
                   <MapPin />
                   <div>
@@ -442,6 +495,23 @@ export default function OperatorScreen() {
               ))
             )}
           </section>
+          {demoMode && (
+            <section className="card demo-alerts">
+              <header>
+                <div><small>EXERCÍCIO DE APRESENTAÇÃO</small><h2>Alertas comunitários simulados</h2></div>
+                <span>não enviados por SMS</span>
+              </header>
+              <div className="demo-alert-list">
+                {DADOS_PAINEL_DEMONSTRACAO.alertas.map((alerta) => (
+                  <article key={alerta.id}>
+                    <span className={`demo-risk-badge ${alerta.nivel === "alto" ? "high" : "medium"}`}>{alerta.nivel}</span>
+                    <div><b>{alerta.perigo} · {alerta.distrito}</b><small>Zona de demonstração · emitido {alerta.emitido}</small></div>
+                    <span className="demo-confirmations"><CheckCircle2 size={14} /> {alerta.confirmacoes}/{alerta.total} confirmações</span>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </section>
     </main>

@@ -1,0 +1,3 @@
+[submodule "api-risco"]
+	path = api-risco
+	url = https://github.com/nitinc264/Flood-prediction-Model.git
