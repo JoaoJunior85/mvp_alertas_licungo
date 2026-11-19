@@ -165,6 +165,10 @@ app.post('/api/operador/login', async (req, res) => {
     const account = result.rows[0];
     const valid = account ? await verifyPassword(senha, account.senha_hash) : false;
     if (!valid) return res.status(401).json({ erro: 'Acesso negado. Credenciais inválidas.' });
+    if (!account.senha_hash.startsWith('scrypt$')) {
+      const senhaHash = await hashPassword(senha);
+      await pool.query('UPDATE operadores_cenoe SET senha_hash = $1 WHERE id = $2', [senhaHash, account.id]);
+    }
     const { senha_hash: _ignored, ...operador } = account;
     return res.json({ operador, token: 'autorizado' });
   } catch (error) {

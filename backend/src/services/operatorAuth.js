@@ -13,9 +13,15 @@ async function hashPassword(password) {
 }
 
 async function verifyPassword(password, storedHash) {
-  if (typeof storedHash !== 'string') return false;
+  if (typeof storedHash !== 'string' || !storedHash) return false;
   const [algorithm, salt, expectedHex] = storedHash.split('$');
-  if (algorithm !== 'scrypt' || !salt || !expectedHex) return false;
+  if (algorithm !== 'scrypt') {
+    // Compatibilidade temporária: após autenticação, server.js converte este valor legado para scrypt.
+    const expectedLegacy = Buffer.from(storedHash, 'utf8');
+    const actualLegacy = Buffer.from(password, 'utf8');
+    return expectedLegacy.length === actualLegacy.length && timingSafeEqual(expectedLegacy, actualLegacy);
+  }
+  if (!salt || !expectedHex) return false;
   const expected = Buffer.from(expectedHex, 'hex');
   const actual = await scryptAsync(password, salt, expected.length);
   return expected.length === actual.length && timingSafeEqual(expected, actual);

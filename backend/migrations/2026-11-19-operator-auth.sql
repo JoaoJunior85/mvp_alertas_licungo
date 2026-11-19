@@ -5,6 +5,11 @@ ALTER TABLE operadores_cenoe
 ALTER TABLE operadores_cenoe
   ADD COLUMN IF NOT EXISTS cargo VARCHAR(100) NOT NULL DEFAULT 'Operador CENOE';
 
+-- Atualiza para hash a conta de demonstração que possa existir de uma versão anterior.
+UPDATE operadores_cenoe
+SET senha_hash = 'scrypt$9aec244ca28445921f1e9225a5efd4d7$d7cb3139bf3ea138f22f0fa7bfac4bed109c6ab81a5f2b08aded170a709f1074332fd25a091e3c28fbb1ae2620f66358e5d19501918b7343a861fd387dbc804f'
+WHERE lower(email) = lower('admin@cenoe.gov.mz')
+  AND (senha_hash IS NULL OR split_part(senha_hash, '$', 1) <> 'scrypt');
 -- Conta fictícia para demonstração em sala. Remover ou substituir antes de operação real.
 -- Credenciais de demonstração: admin@cenoe.gov.mz / 123456.
 INSERT INTO operadores_cenoe (nome, email, cargo, senha_hash)
