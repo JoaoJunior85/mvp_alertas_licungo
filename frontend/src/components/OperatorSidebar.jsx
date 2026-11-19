@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Clock3, Database, History, LayoutDashboard, LogOut, Radio, Settings, Users, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Brand from './Brand';
 
 const ITEMS = [
@@ -42,7 +42,10 @@ function StatusRow({ tone, label, value }) {
 }
 
 // Sidebar da sala de operações: navegação, relógio e estado vindo da API.
-export default function OperatorSidebar({ activeAlerts = 0, systemStatus = {}, smsSimulated = true, isOpen = false, onClose = () => {} }) {
+export default function OperatorSidebar({ activeAlerts = 0, systemStatus = {}, smsSimulated = true, isOpen = false, onClose = () => {}, operator = {} }) {
+  const navigate = useNavigate();
+  const initials = (operator.nome || 'TC').split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+  const sair = () => { window.localStorage.removeItem('operador_sessao'); navigate('/', { replace: true }); };
   return <aside className={`sidebar${isOpen ? ' sidebar-open' : ''}`}>
     <div className="sidebar-brand-row">
       <Brand />
@@ -82,12 +85,12 @@ export default function OperatorSidebar({ activeAlerts = 0, systemStatus = {}, s
 
     <div className="sidebar-profile">
       <div className="operator-user">
-        <b>TC</b>
-        <span>Técnico de serviço<small>Sala de Situações · Mocuba</small></span>
+        <b>{initials}</b>
+        <span>{operator.nome || 'Técnico de serviço'}<small>{operator.cargo || 'Sala de Situações · Mocuba'}</small></span>
       </div>
-      <Link to="/" className="sidebar-logout" title="Voltar à página inicial" aria-label="Sair do painel e voltar à página inicial">
+      <button type="button" onClick={sair} className="sidebar-logout" title="Terminar sessão e voltar à página inicial" aria-label="Sair do painel e voltar à página inicial">
         <LogOut size={17} strokeWidth={2} />
-      </Link>
+      </button>
     </div>
   </aside>;
 }

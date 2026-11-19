@@ -34,7 +34,7 @@ export function Entry() {
           </div>
         </div>
         <div className="entry-options grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Link to="/operador" className="entry-card entry-card-operator group">
+          <Link to="/operador/login" className="entry-card entry-card-operator group">
             <div className="entry-card-top">
               <span className="entry-card-icon"><Monitor /></span>
               <small className="access-badge restricted"><LockKeyhole /> Sistema restrito</small>

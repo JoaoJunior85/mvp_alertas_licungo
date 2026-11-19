@@ -217,3 +217,10 @@ Usar no cartão **Análise de risco** do operador. O painel já envia este conju
 - A identificação comunitária fica guardada no `localStorage` deste dispositivo, restaura a zona ao reabrir `/comunidade` e pode ser terminada em “Sair / Mudar de conta”.
 - Foi adicionada a migração `backend/migrations/2026-11-19-add-community-user-name.sql`; executa-a no SQL Editor do Supabase antes de publicar a nova versão do backend.
 - A identificação por telefone sem código de confirmação não comprova a posse do número; é uma sessão leve adequada ao protótipo, não autenticação forte.
+## Segurança: Implementação de Autenticação de Operadores CENOE, Ecrã de Login (T06) e Proteção de Rotas com React Router
+
+- A rota `/operador` agora exige uma sessão local válida e redireciona visitantes para `/operador/login`; a tela T06 oferece login, criação de operador e preenchimento de credenciais de demonstração.
+- O backend possui endpoints de registo e login de operadores. As senhas são guardadas como hashes scrypt com salt individual e comparadas em tempo constante; nenhuma senha em texto simples é persistida.
+- A sidebar apresenta o operador autenticado e encerra a sessão ao limpar `operador_sessao`. O painel mantém mapa, classificação e fluxo de alertas existentes.
+- A migração `backend/migrations/2026-11-19-operator-auth.sql` adiciona os campos de autenticação e semeia uma conta fictícia para demonstração (`admin@cenoe.gov.mz` / `123456`). Remover ou substituir esta conta antes de qualquer uso operacional.
+- A proteção de rota e o token `autorizado` são apenas uma barreira de interface para o protótipo. Antes de operação real, implementar sessão assinada no servidor, proteger as rotas de escrita da API e restringir/administrar a criação de operadores.

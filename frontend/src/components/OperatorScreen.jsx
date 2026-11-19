@@ -56,6 +56,11 @@ function tempoDesdeReporte(value) {
 
 // Painel desktop para analisar indicadores, validar a classificação e emitir alertas.
 export default function OperatorScreen() {
+  // A identidade veio do login e é usada para personalizar a sala de operações.
+  const [operator] = useState(() => {
+    try { return JSON.parse(window.localStorage.getItem("operador_sessao") || "{}"); }
+    catch { return {}; }
+  });
   const [districts, setDistricts] = useState([]),
     [selected, setSelected] = useState(null),
     [risks, setRisks] = useState({}),
@@ -230,6 +235,7 @@ export default function OperatorScreen() {
         />
       )}
       <OperatorSidebar
+        operator={operator}
         activeAlerts={alertasVisiveis}
         systemStatus={systemStatus}
         smsSimulated={systemStatus.smsSimulated ?? true}
@@ -260,7 +266,7 @@ export default function OperatorScreen() {
             <div>
               <small>MONITORIZAÇÃO EM TEMPO REAL</small>
               <h1>Painel de operações</h1>
-              <p>Analise as condições e coordene uma resposta rápida.</p>
+              <p>Bem-vindo, Técnico {operator.nome || "de serviço"}. Analise as condições e coordene uma resposta rápida.</p>
             </div>
             <div className="heading-actions">
               <button className={`demo-toggle${demoMode ? " selected" : ""}`} onClick={() => setDemoMode((enabled) => !enabled)}>

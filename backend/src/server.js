@@ -5,6 +5,7 @@ const pool = require('./config/db');
 const { calcularClassificacao } = require('./services/risk');
 const { enviarSMS } = require('./services/smsService');
 const { preverRiscoInundacao } = require('./services/riskModel');
+const { hashPassword, verifyPassword } = require('./services/operatorAuth');
 
 // Configura o parsing de JSON e permite chamadas do frontend.
 const app = express();
@@ -125,6 +126,52 @@ app.post('/api/risco/modelo', async (req, res) => {
   }
 });
 
+// Cria uma conta operacional. A senha nunca é guardada em texto simples.
+app.post('/api/operador/registo', async (req, res) => {
+  const nome = typeof req.body?.nome === 'string' ? req.body.nome.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const senha = typeof req.body?.senha === 'string' ? req.body.senha : '';
+  if (!nome || nome.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || senha.length < 8 || senha.length > 200) {
+    return res.status(400).json({ erro: 'Informe nome, email válido e senha com pelo menos 8 caracteres.' });
+  }
+  try {
+    const existing = await pool.query('SELECT id FROM operadores_cenoe WHERE lower(email) = $1 LIMIT 1', [email]);
+    if (existing.rowCount) return res.status(409).json({ erro: 'Este email já está registado.' });
+    const senhaHash = await hashPassword(senha);
+    const result = await pool.query(`
+      INSERT INTO operadores_cenoe (nome, email, cargo, senha_hash)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, nome, email, cargo
+    `, [nome, email, 'Operador CENOE', senhaHash]);
+    return res.status(201).json({ operador: result.rows[0] });
+  } catch (error) {
+    console.error('Erro ao registar operador:', error);
+    return res.status(500).json({ erro: 'Não foi possível criar a conta agora.' });
+  }
+});
+
+// Valida as credenciais e devolve o token simbólico utilizado pelo protótipo no navegador.
+app.post('/api/operador/login', async (req, res) => {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const senha = typeof req.body?.senha === 'string' ? req.body.senha : '';
+  if (!email || !senha) return res.status(400).json({ erro: 'Introduza o email e a senha.' });
+  try {
+    const result = await pool.query(`
+      SELECT id, nome, email, cargo, senha_hash
+      FROM operadores_cenoe
+      WHERE lower(email) = $1
+      LIMIT 1
+    `, [email]);
+    const account = result.rows[0];
+    const valid = account ? await verifyPassword(senha, account.senha_hash) : false;
+    if (!valid) return res.status(401).json({ erro: 'Acesso negado. Credenciais inválidas.' });
+    const { senha_hash: _ignored, ...operador } = account;
+    return res.json({ operador, token: 'autorizado' });
+  } catch (error) {
+    console.error('Erro ao autenticar operador:', error);
+    return res.status(500).json({ erro: 'Não foi possível iniciar sessão agora.' });
+  }
+});
 // Procura um contacto pelo telefone e devolve os dados necessários para abrir a zona comunitária.
 app.post('/api/login', async (req, res) => {
   const telefone = typeof req.body?.telefone === 'string' ? req.body.telefone.trim() : '';

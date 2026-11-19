@@ -732,3 +732,38 @@ button:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 12px 24px #0
 .community-session-actions button svg{width:16px;height:16px}
 .session-loading{margin:50px auto;text-align:center;color:#475569;font-size:16px}
 @media(min-width:640px){.community-session-actions{flex-direction:row}}
+/* T06 — login CENOE com atmosfera War Room, contraste e controlos táteis. */
+.operator-login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:24px;background:radial-gradient(ellipse at 50% 10%,#143652 0%,#0f2a43 42%,#0b1b2b 100%);color:#f8fafc}
+.operator-login-top{position:absolute;top:24px;left:clamp(18px,5vw,64px);right:clamp(18px,5vw,64px);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.operator-login-top>span,.operator-login-eyebrow{color:#8ba8bd;font-size:10px;font-weight:800;letter-spacing:.16em}
+.operator-login-top .brand{color:#f8fafc}
+.operator-login-card{width:min(460px,100%);padding:clamp(24px,5vw,38px);border:1px solid rgba(148,163,184,.2);border-radius:22px;background:rgba(18,38,58,.82);backdrop-filter:blur(18px);box-shadow:0 28px 80px rgba(0,0,0,.3)}
+.operator-login-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:22px;color:#a9bfd0;font-size:13px;text-decoration:none}
+.operator-login-back:hover{color:#fff}
+.operator-login-emblem{width:48px;height:48px;display:grid;place-items:center;margin-bottom:16px;border:1px solid rgba(96,165,250,.3);border-radius:14px;color:#93c5fd;background:rgba(59,130,246,.12)}
+.operator-login-eyebrow{font-size:9px;color:#8cb8d4}
+.operator-login-card h1{margin:9px 0 8px;color:#f8fafc;font-size:clamp(25px,5vw,32px);font-weight:800;letter-spacing:-.04em}
+.operator-login-card>p{margin:0 0 22px;color:#b3c4d1;font-size:14px;line-height:1.65}
+.operator-login-card form{display:grid;gap:15px}
+.operator-login-card label{display:grid;gap:7px;color:#d9e5ed;font-size:13px;font-weight:700}
+.operator-login-input{position:relative;display:flex;align-items:center}
+.operator-login-input>svg{position:absolute;left:14px;width:18px;height:18px;color:#8ba8bd;pointer-events:none}
+.operator-login-input input{width:100%;min-height:52px;padding:12px 44px;border:1px solid rgba(148,163,184,.27);border-radius:11px;outline:none;color:#f8fafc;background:rgba(5,20,33,.56);font-size:16px;transition:border-color .18s ease,box-shadow .18s ease}
+.operator-login-input input::placeholder{color:#7891a4}
+.operator-login-input input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(59,130,246,.2)}
+.operator-password-toggle{position:absolute;right:7px;width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:8px;color:#a9bfd0;background:transparent}
+.operator-password-toggle:hover{color:#fff;background:rgba(148,163,184,.12)}
+.operator-password-toggle svg{width:18px;height:18px}
+.operator-login-submit{min-height:52px;margin-top:3px;border:1px solid #3b82f6;border-radius:11px;color:#fff;background:linear-gradient(100deg,#2563eb,#1d4ed8);font-size:15px;font-weight:800;box-shadow:0 9px 22px rgba(37,99,235,.2);transition:transform .18s ease,filter .18s ease}
+.operator-login-submit:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.operator-login-submit:disabled{opacity:.65;cursor:wait}
+.operator-demo-fill{display:block;margin:12px auto 0;padding:7px 10px;border:1px solid rgba(148,163,184,.2);border-radius:8px;color:#b8ccda;background:transparent;font-size:12px}
+.operator-demo-fill:hover{border-color:#60a5fa;color:#dbeafe;background:rgba(59,130,246,.08)}
+.operator-login-switch{margin-top:20px;padding-top:17px;border-top:1px solid rgba(148,163,184,.16);color:#b3c4d1;font-size:13px;text-align:center}
+.operator-login-switch button{border:0;color:#93c5fd;background:transparent;font-weight:800}
+.operator-login-switch button:hover{color:#bfdbfe;text-decoration:underline}
+.operator-login-error{display:flex;align-items:flex-start;gap:9px;padding:11px 12px;border:1px solid rgba(248,113,113,.3);border-radius:10px;color:#fecaca;background:rgba(127,29,29,.24);font-size:13px;line-height:1.5}
+.operator-login-error svg{flex:0 0 auto;margin-top:1px}
+.operator-login-note{display:block;margin-top:18px;color:#7891a4;font-size:10px;text-align:center}
+.operator-login-footer{color:#7891a4;font-size:9px;font-weight:700;letter-spacing:.13em;text-align:center}
+@media(max-width:560px){.operator-login{justify-content:flex-start;padding:112px 16px 24px}.operator-login-top{top:18px;left:16px;right:16px}.operator-login-top>span{font-size:8px;text-align:right}.operator-login-card{border-radius:18px}}

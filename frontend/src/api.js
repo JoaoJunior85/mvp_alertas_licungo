@@ -18,6 +18,8 @@ const requestAiPrediction = async (dados) =>
 
 // Expõe as operações utilizadas pelas telas de operador e comunidade.
 export const api = {
+  loginOperador: (dados) => request('/operador/login', post(dados)),
+  registarOperador: (dados) => request('/operador/registo', post(dados)),
   getHealth: () => request('/health'),
   getDistritos: () => request('/distritos'),
   getComunidades: (distritoId) => request(`/comunidades?distrito_id=${encodeURIComponent(distritoId)}`),
