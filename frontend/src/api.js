@@ -26,6 +26,7 @@ export const api = {
   getAlertasAtivos: (distritoId) => request(`/alertas/ativos?distrito_id=${encodeURIComponent(distritoId)}`),
   getAiPrediction: requestAiPrediction,
   registar: (dados) => request('/utilizadores', post(dados)),
+  login: (dados) => request('/login', post(dados)),
   enviarAlerta: (dados) => request('/alertas', post(dados)),
   confirmar: (dados) => request('/confirmacoes', post(dados)),
   reportar: (dados) => request('/reportes', post(dados)),

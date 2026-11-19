@@ -40,6 +40,8 @@ button,a{transition:all .3s ease}
 .input input,.select select,.modal textarea{min-height:52px;font-size:16px;color:#0F172A;background:#fff;border-color:#CBD5E1}
 .community-button,.alert-row button,.report-button{min-height:54px;padding:14px 18px;font-size:15px;border-radius:10px}
 .community-button{background:#2563EB}
+.report-button--urgent{border-color:#fecaca;color:#991b1b;background:linear-gradient(135deg,#fff7f7,#fee2e2);box-shadow:0 5px 16px rgba(185,28,28,.08);font-weight:700;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.report-button--urgent:hover{transform:translateY(-1px);background:#fee2e2;box-shadow:0 8px 20px rgba(185,28,28,.14)}
 .community-button:hover,.alert-row button:hover{background:#1D4ED8}
 .alert-row b,.no-alert b,.guidance b{font-size:15px;color:#0F172A}
 .alert-row small,.no-alert small,.guidance p,.current>p{font-size:13px;line-height:1.55;color:#475569}
@@ -716,3 +718,17 @@ button:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 12px 24px #0
   .carousel-image,.carousel-arrow,.carousel-dot,.community .current{transition:none}
   .animate-spin-slow{animation:none}
 }
+
+/* Acesso comunitário por telefone: opções claras, botões grandes e saída visível. */
+.community-access-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 18px;padding:5px;border:1px solid #e2e8f0;border-radius:12px;background:#f1f5f9}
+.community-access-tabs button{min-height:48px;padding:10px;border:1px solid transparent;border-radius:9px;color:#475569;background:transparent;font-size:14px;font-weight:700;transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.community-access-tabs button:hover{color:#1d4ed8;background:#fff}
+.community-access-tabs button.is-selected{border-color:#dbeafe;color:#1d4ed8;background:#fff;box-shadow:0 2px 7px rgba(15,23,42,.08)}
+.community-session-actions{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.community-session-actions>span{display:flex;align-items:center;gap:6px;color:#15803d;font-size:12px;font-weight:700}
+.community-session-actions>span svg{width:17px;height:17px}
+.community-session-actions button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:9px;color:#475569;background:#fff;font-size:13px;font-weight:600;transition:all .18s ease}
+.community-session-actions button:hover{border-color:#fecaca;color:#b91c1c;background:#fff7f7}
+.community-session-actions button svg{width:16px;height:16px}
+.session-loading{margin:50px auto;text-align:center;color:#475569;font-size:16px}
+@media(min-width:640px){.community-session-actions{flex-direction:row}}

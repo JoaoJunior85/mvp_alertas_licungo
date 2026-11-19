@@ -11,6 +11,7 @@ import {
   Database,
   FlaskConical,
   MapPin,
+  MessageSquareWarning,
   Menu,
   Users,
   Waves,
@@ -41,6 +42,17 @@ const DADOS_DEMONSTRATIVOS_IA = {
   landcover_type: 1,
   soil_type: 3,
 };
+
+// Mostra a idade do reporte em linguagem curta para leitura rápida na sala de operações.
+function tempoDesdeReporte(value) {
+  if (!value) return "Data indisponível";
+  const minutos = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
+  if (minutos < 1) return "há menos de 1 min";
+  if (minutos < 60) return `há ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `há ${horas} h`;
+  return `há ${Math.floor(horas / 24)} dia(s)`;
+}
 
 // Painel desktop para analisar indicadores, validar a classificação e emitir alertas.
 export default function OperatorScreen() {
@@ -472,7 +484,7 @@ export default function OperatorScreen() {
             <header>
               <div>
                 <small>RETORNO DO TERRENO</small>
-                <h2>Reportes recentes</h2>
+                <h2>Reportes Recentes do Terreno</h2>
               </div>
               <span>{painelVisivel.reportes_recentes?.length || 0} reportes{demoMode ? " · demonstração" : ""}</span>
             </header>
@@ -481,16 +493,16 @@ export default function OperatorScreen() {
             ) : (
               painelVisivel.reportes_recentes.map((r) => (
                 <article key={r.id}>
-                  <MapPin />
+                  <MessageSquareWarning />
                   <div>
-                    <b>{r.tipo}</b>
+                    <b>{r.distrito || "Distrito"}: {r.tipo}</b>
                     <p>{r.descricao}</p>
                     <small>
-                      {r.distrito || "Distrito"} ·{" "}
+                      {tempoDesdeReporte(r.criado_em)} ·{" "}
                       {r.telefone || "Utilizador registado"}
                     </small>
                   </div>
-                  <time>{dateLabel(r.criado_em)}</time>
+                  <time dateTime={r.criado_em}>{dateLabel(r.criado_em)}</time>
                 </article>
               ))
             )}

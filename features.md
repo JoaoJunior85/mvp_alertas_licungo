@@ -203,3 +203,17 @@ Usar no cartão **Análise de risco** do operador. O painel já envia este conju
 - O cartão de risco indisponível tem gradiente suave, borda tracejada e radar animado. Para risco baixo, médio ou alto, usa borda lateral e fundo com tonalidade correspondente.
 - O cabeçalho comunitário permanece fixo durante o scroll; a localização aparece como filtro visual e o conteúdo da tela entra com uma animação discreta.
 - As leituras de risco e os pedidos existentes à API não foram alterados.
+
+## Fluxo C: Reporte comunitário e retorno ao painel do operador
+
+- A tela da comunidade mantém o modal de reporte e agora apresenta as opções “Estrada cortada”, “Casa inundada” e “Pessoas isoladas”, com campo de descrição limitado a 500 caracteres.
+- O botão de abertura do modal destaca o reporte de campo em vermelho suave. O envio usa o cliente API existente (`POST /api/reportes`) e associa o registo ao utilizador e distrito da sessão comunitária.
+- O painel já consome `GET /api/painel`; o cartão foi identificado como “Reportes Recentes do Terreno” e mostra distrito, tipo, descrição, contacto e tempo decorrido. Os endpoints existentes de criação e consulta foram preservados.
+
+## Fluxo de Identificação Comunitária: Login por Telemóvel, Sessão Persistente (localStorage) e Registo com Nome Personalizado
+
+- A tela da comunidade oferece acesso para utilizadores existentes pelo número de telemóvel e um formulário de registo com nome, telefone, distrito e comunidade.
+- O backend devolve os dados de identificação e localização no endpoint `POST /api/login`; o registo guarda ou actualiza o nome e inicia a identificação automaticamente.
+- A identificação comunitária fica guardada no `localStorage` deste dispositivo, restaura a zona ao reabrir `/comunidade` e pode ser terminada em “Sair / Mudar de conta”.
+- Foi adicionada a migração `backend/migrations/2026-11-19-add-community-user-name.sql`; executa-a no SQL Editor do Supabase antes de publicar a nova versão do backend.
+- A identificação por telefone sem código de confirmação não comprova a posse do número; é uma sessão leve adequada ao protótipo, não autenticação forte.

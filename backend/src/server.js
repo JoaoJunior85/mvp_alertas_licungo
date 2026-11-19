@@ -1,4 +1,4 @@
-﻿// Importa as dependências HTTP e o cliente PostgreSQL partilhado pela API.
+// Importa as dependências HTTP e o cliente PostgreSQL partilhado pela API.
 const express = require('express');
 const cors = require('cors');
 const pool = require('./config/db');
@@ -125,11 +125,36 @@ app.post('/api/risco/modelo', async (req, res) => {
   }
 });
 
-// Regista o contacto sem depender de uma restrição UNIQUE não especificada no esquema.
+// Procura um contacto pelo telefone e devolve os dados necessários para abrir a zona comunitária.
+app.post('/api/login', async (req, res) => {
+  const telefone = typeof req.body?.telefone === 'string' ? req.body.telefone.trim() : '';
+  if (!telefone) return res.status(400).json({ erro: 'Introduza o número de telemóvel para continuar.' });
+  try {
+    const result = await pool.query(`
+      SELECT u.id, u.nome, u.telefone, u.distrito_id, u.comunidade_id,
+             d.nome AS distrito, c.nome AS comunidade
+      FROM utilizadores_comunidade u
+      JOIN distritos d ON d.id = u.distrito_id
+      JOIN comunidades c ON c.id = u.comunidade_id AND c.distrito_id = u.distrito_id
+      WHERE u.telefone = $1
+      ORDER BY u.id
+      LIMIT 1
+    `, [telefone]);
+    if (!result.rowCount) {
+      return res.status(404).json({ erro: 'Número não encontrado. Por favor, crie um novo registo.' });
+    }
+    return res.json({ utilizador: result.rows[0] });
+  } catch (error) {
+    console.error('Erro ao identificar utilizador comunitário:', error);
+    return res.status(500).json({ erro: 'Não foi possível confirmar o número agora. Tente novamente.' });
+  }
+});
+
+// Regista ou actualiza o contacto comunitário sem exigir password.
 app.post('/api/utilizadores', async (req, res) => {
-  const { telefone, distrito_id, comunidade_id } = req.body;
-  if (typeof telefone !== 'string' || !telefone.trim() || !distrito_id || !comunidade_id) {
-    return res.status(400).json({ erro: 'telefone, distrito_id e comunidade_id são obrigatórios.' });
+  const { nome, telefone, distrito_id, comunidade_id } = req.body;
+  if (typeof nome !== 'string' || !nome.trim() || nome.trim().length > 100 || typeof telefone !== 'string' || !telefone.trim() || !distrito_id || !comunidade_id) {
+    return res.status(400).json({ erro: 'nome, telefone, distrito_id e comunidade_id são obrigatórios.' });
   }
   const client = await pool.connect();
   try {
@@ -141,8 +166,8 @@ app.post('/api/utilizadores', async (req, res) => {
     }
     const existing = await client.query('SELECT id FROM utilizadores_comunidade WHERE telefone = $1 ORDER BY id LIMIT 1', [telefone.trim()]);
     const result = existing.rowCount
-      ? await client.query('UPDATE utilizadores_comunidade SET distrito_id = $1, comunidade_id = $2 WHERE id = $3 RETURNING id, telefone, distrito_id, comunidade_id', [distrito_id, comunidade_id, existing.rows[0].id])
-      : await client.query('INSERT INTO utilizadores_comunidade (telefone, distrito_id, comunidade_id) VALUES ($1, $2, $3) RETURNING id, telefone, distrito_id, comunidade_id', [telefone.trim(), distrito_id, comunidade_id]);
+      ? await client.query('UPDATE utilizadores_comunidade SET nome = $1, distrito_id = $2, comunidade_id = $3 WHERE id = $4 RETURNING id, nome, telefone, distrito_id, comunidade_id', [nome.trim(), distrito_id, comunidade_id, existing.rows[0].id])
+      : await client.query('INSERT INTO utilizadores_comunidade (nome, telefone, distrito_id, comunidade_id) VALUES ($1, $2, $3, $4) RETURNING id, nome, telefone, distrito_id, comunidade_id', [nome.trim(), telefone.trim(), distrito_id, comunidade_id]);
     await client.query('COMMIT');
     res.status(201).json({ utilizador: result.rows[0] });
   } catch (error) {
