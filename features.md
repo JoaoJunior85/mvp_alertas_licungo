@@ -172,6 +172,7 @@ Usar no cartão **Análise de risco** do operador. O painel já envia este conju
 - Foram adicionados Dockerfiles, verificações de saúde, proxy `/api` e fallback SPA. O frontend usa `/api` por padrão; no desenvolvimento, o Vite encaminha esse prefixo ao backend local.
 - `backend/.env.example` contém apenas placeholders. Crie `backend/.env`, configure `DATABASE_URL` e a origem pública em `CORS_ORIGIN`; mantenha `SMS_API_KEY` vazio para simulação.
 - O procedimento de configuração, build e publicação está em [docs/HOSTING.md](docs/HOSTING.md). A construção local das imagens requer Docker Engine e Docker Compose.
+- A imagem Render da API de risco é autónoma: o Dockerfile copia `api.py` e os três artefactos versionados em `deployment/risk-model/model`, sem depender de o Render inicializar o submódulo Git.
 
 ## UI/UX: Upgrade da Sidebar para Estilo War Room (Relógio, Status do Sistema, Menu Rico)
 

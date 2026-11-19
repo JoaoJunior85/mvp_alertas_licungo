@@ -11,10 +11,10 @@ RUN apt-get update \
 COPY deployment/risk-model/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY api-risco/api-py/api.py ./
-COPY api-risco/api-py/flood_model.pkl ./
-COPY api-risco/api-py/encoders.pkl ./
-COPY api-risco/api-py/feature_columns.pkl ./
+COPY deployment/risk-model/model/api.py ./
+COPY deployment/risk-model/model/flood_model.pkl ./
+COPY deployment/risk-model/model/encoders.pkl ./
+COPY deployment/risk-model/model/feature_columns.pkl ./
 COPY deployment/risk-model/entrypoint.py ./
 RUN useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app

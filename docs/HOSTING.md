@@ -7,7 +7,7 @@ O repositório tem Docker Compose para iniciar frontend, backend Node e API Fast
 - Para executar localmente com containers: Docker Engine e Docker Compose v2.
 - Uma base PostgreSQL/Supabase acessível pelo backend.
 - O schema/tabelas do projecto aplicados nessa base de dados.
-- O submódulo `api-risco` inicializado e os artefactos `flood_model.pkl`, `encoders.pkl` e `feature_columns.pkl` em `api-risco/api-py`.
+- Para construir a API do modelo, os ficheiros versionados em `deployment/risk-model/model`: `api.py`, `flood_model.pkl`, `encoders.pkl` e `feature_columns.pkl`. O submódulo `api-risco` mantém a origem do modelo, mas não é necessário durante o build no Render.
 
 ## Preparar as variáveis
 
@@ -72,15 +72,14 @@ A aplicação publica-se em três partes: Supabase mantém a base existente, Ren
 ### 1. Preparar e enviar o repositório ao GitHub
 
 1. Confirma que estás na branch `main` e que o `origin` aponta para o repositório GitHub correcto.
-2. Confirma que a raiz contém `.gitmodules` com a URL pública do modelo e que `api-risco` continua registado como submódulo:
+2. A imagem do modelo usa uma cópia versionada e autónoma em `deployment/risk-model/model`; o build no Render não depende de clonar o submódulo `api-risco`. O submódulo continua a servir de referência para a origem do código e dos artefactos. Quando o modelo for actualizado, copia os quatro ficheiros dessa origem para a pasta versionada antes de publicar.
 
    ```powershell
-   Get-Content .gitmodules
-   git ls-files -s -- api-risco
-   git submodule status
+   Get-ChildItem deployment/risk-model/model
+   git status --short
    ```
 
-   O `git ls-files` deve mostrar o modo `160000` para `api-risco`, e `.gitmodules` deve apontar para `https://github.com/nitinc264/Flood-prediction-Model.git`. Neste workspace o submódulo local ainda aparece com `-` e contém ficheiros/ambientes Python; não executes `git submodule update` nesta pasta existente. Para o deploy, o essencial é enviar `.gitmodules` e o gitlink para o GitHub: o Render clona automaticamente os submódulos públicos durante o build. [Documentação de submódulos no Render](https://render.com/docs/git-provider#git-submodules).
+   Confirma que aparecem os quatro ficheiros; não adiciones `.venv`, `venv` nem ficheiros `.env` ao Git.
 
 3. Confirma `git status` e verifica que nenhum `.env` ou segredo aparece para commit. Depois adiciona e publica as alterações necessárias:
 
@@ -93,7 +92,7 @@ A aplicação publica-se em três partes: Supabase mantém a base existente, Ren
 
    Este passo é obrigatório: Vercel e Render fazem deploy do GitHub, não dos ficheiros ainda não enviados do teu computador.
 
-   Se quiseres confirmar que o clone público consegue materializar o submódulo, faz essa verificação depois do push numa pasta nova e vazia com `git clone --recurse-submodules <URL-do-repositório>`. Não reutilizes a pasta `api-risco` já existente neste workspace.
+   O commit deve incluir o Dockerfile actualizado e os quatro ficheiros em `deployment/risk-model/model`.
 
 ### 2. Confirmar a Supabase
 
